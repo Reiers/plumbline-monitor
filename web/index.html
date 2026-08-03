@@ -3,233 +3,199 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Plumbline · Public Status</title>
-<meta name="description" content="Live SLO-compliance status for the Plumbline Filecoin Calibration stability surface (faucet + calix + SP test targets).">
-<meta name="theme-color" content="#06100B">
-<meta property="og:title" content="Plumbline · Public Status">
-<meta property="og:description" content="Live SLO compliance for the Plumbline calibration stability surface.">
+<title>Plumbline Status</title>
+<meta name="description" content="Live status and 90-day uptime history for the Plumbline Filecoin Calibration stability surface (faucet, calix, SP test target).">
+<meta name="theme-color" content="#3ECF63">
+<meta property="og:title" content="Plumbline Status">
+<meta property="og:description" content="Live status and 90-day uptime history for the Plumbline calibration stability surface.">
 <link rel="icon" type="image/svg+xml" href="https://raw.githubusercontent.com/Reiers/plumbline/main/brand/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-<header class="topbar">
-  <div class="topbar-inner">
-    <div class="brand">
-      <a href="https://github.com/Reiers/plumbline" class="brand-link" aria-label="Plumbline home">
-        <img src="https://raw.githubusercontent.com/Reiers/plumbline/main/brand/logo.svg" alt="" class="brand-logo">
-        <span class="brand-name">Plumbline</span>
-        <span class="brand-sep">·</span>
-        <span class="brand-context">Public Status</span>
-      </a>
-    </div>
-    <nav class="topbar-nav">
-      <a href="https://github.com/Reiers/plumbline/blob/main/SLO.md">SLO</a>
-      <a href="https://github.com/Reiers/plumbline/blob/main/RUNBOOK.md">Runbook</a>
-      <a href="https://faucet.reiers.io">Faucet</a>
-      <a href="https://calix.reiers.io">Calix</a>
-      <a href="https://github.com/Reiers/plumbline-monitor">Source</a>
-    </nav>
+<header class="page-header">
+  <div class="header-inner">
+    <a href="https://github.com/Reiers/plumbline" class="brand" aria-label="Plumbline">
+      <img src="https://raw.githubusercontent.com/Reiers/plumbline/main/brand/logo.svg" alt="" class="brand-logo">
+      <span class="brand-name">Plumbline</span>
+    </a>
+    <a class="btn btn-primary" href="https://github.com/Reiers/plumbline/blob/main/SLO.md">
+      View SLO
+    </a>
   </div>
 </header>
 
+<div class="status-banner" id="status-banner" data-state="loading">
+  <span class="banner-text" id="banner-text">Loading current status&hellip;</span>
+</div>
+
 <main class="page">
 
-  <!-- Overall status hero -->
-  <section class="hero" id="hero" data-state="loading">
-    <div class="hero-pill" id="hero-pill">
-      <span class="pill-dot"></span>
-      <span class="pill-label" id="hero-label">Loading&hellip;</span>
+  <section class="about">
+    <h1>About This Site</h1>
+    <p>
+      Welcome to Plumbline's public status page.
+      Plumbline is the public stability surface for the Filecoin
+      <strong>Calibration</strong> testnet: a tFIL + USDFC faucet, the
+      Calix chain-health console, and a long-running SP test target.
+      Public commitments are documented in
+      <a href="https://github.com/Reiers/plumbline/blob/main/SLO.md">SLO.md</a>;
+      operational procedures in
+      <a href="https://github.com/Reiers/plumbline/blob/main/RUNBOOK.md">RUNBOOK.md</a>.
+    </p>
+    <p class="muted">
+      Operated by TSE Reiersen (Org.&nbsp;929&nbsp;074&nbsp;912). This is a
+      calibration testnet surface, not a mainnet service. For urgent
+      issues, DM <code>@Reiers</code> on Filecoin Slack.
+    </p>
+  </section>
+
+  <section class="uptime">
+    <div class="uptime-head">
+      <h2 class="uptime-title">Uptime over the past 90 days.</h2>
+      <a class="uptime-history" href="https://github.com/Reiers/plumbline/tree/main/reports/">View historical uptime.</a>
     </div>
-    <p class="hero-tagline" id="hero-tagline">
-      Reading upstream signals&hellip;
-    </p>
-    <p class="hero-meta">
-      Refreshed every 30&nbsp;s from public endpoints. Full spec: <a href="https://github.com/Reiers/plumbline/blob/main/SLO.md">SLO.md</a>.
-    </p>
+
+    <div class="components" id="components">
+
+      <!-- Group: Calibration Stability Surface -->
+      <div class="group" data-group="surface">
+        <div class="group-head">
+          <span class="group-name">Calibration Stability Surface</span>
+          <span class="group-state" data-state="loading">
+            <span class="dot"></span><span class="state-text">Checking&hellip;</span>
+          </span>
+        </div>
+        <div class="group-children">
+
+          <div class="component" data-component="faucet">
+            <div class="component-head">
+              <span class="component-name">
+                <span class="expander"></span>
+                Plumbline Faucet
+                <a class="tooltip" href="https://faucet.reiers.io" title="Open faucet.reiers.io" aria-label="Open faucet.reiers.io">↗</a>
+              </span>
+              <span class="component-state" data-state="loading">
+                <span class="dot"></span><span class="state-text">Checking&hellip;</span>
+              </span>
+            </div>
+            <div class="uptime-bar" data-bar="faucet" aria-label="Faucet 90-day uptime bars"></div>
+            <div class="uptime-labels">
+              <span class="label-left">90 days ago</span>
+              <span class="label-center"><strong data-pct="faucet">–</strong> % uptime</span>
+              <span class="label-right">Today</span>
+            </div>
+          </div>
+
+          <div class="component" data-component="calix">
+            <div class="component-head">
+              <span class="component-name">
+                <span class="expander"></span>
+                Calix
+                <a class="tooltip" href="https://calix.reiers.io" title="Open calix.reiers.io" aria-label="Open calix.reiers.io">↗</a>
+              </span>
+              <span class="component-state" data-state="loading">
+                <span class="dot"></span><span class="state-text">Checking&hellip;</span>
+              </span>
+            </div>
+            <div class="uptime-bar" data-bar="calix" aria-label="Calix 90-day uptime bars"></div>
+            <div class="uptime-labels">
+              <span class="label-left">90 days ago</span>
+              <span class="label-center"><strong data-pct="calix">–</strong> % uptime</span>
+              <span class="label-right">Today</span>
+            </div>
+          </div>
+
+          <div class="component" data-component="sp">
+            <div class="component-head">
+              <span class="component-name">
+                <span class="expander"></span>
+                SP Test Target
+                <a class="tooltip" href="https://calibration.filfox.info/en/address/t0143103" title="View t0143103 on Filfox" aria-label="View t0143103 on Filfox">↗</a>
+              </span>
+              <span class="component-state" data-state="loading">
+                <span class="dot"></span><span class="state-text">Checking&hellip;</span>
+              </span>
+            </div>
+            <div class="uptime-bar" data-bar="sp" aria-label="SP 90-day uptime bars"></div>
+            <div class="uptime-labels">
+              <span class="label-left">90 days ago</span>
+              <span class="label-center"><strong data-pct="sp">–</strong> % uptime</span>
+              <span class="label-right">Today</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <div class="legend">
+      <span class="legend-item"><span class="chip chip-ok"></span>Operational</span>
+      <span class="legend-item"><span class="chip chip-watch"></span>Degraded Performance</span>
+      <span class="legend-item"><span class="chip chip-bad"></span>Major Outage</span>
+      <span class="legend-item"><span class="chip chip-nodata"></span>No data</span>
+    </div>
   </section>
 
-  <!-- Service tiles -->
-  <section class="tiles">
-
-    <article class="tile" id="tile-faucet" data-state="loading">
-      <header class="tile-head">
-        <h2>Plumbline Faucet</h2>
-        <span class="tile-state">
-          <span class="dot"></span><span class="state-label">–</span>
-        </span>
-      </header>
-      <p class="tile-sub">
-        <a href="https://faucet.reiers.io">faucet.reiers.io</a> · tFIL + USDFC drip
-      </p>
-      <div class="tile-body">
-        <div class="metric">
-          <span class="metric-label">Dispenser · tFIL</span>
-          <span class="metric-value" id="faucet-fil-balance">–</span>
-        </div>
-        <div class="metric">
-          <span class="metric-label">Dispenser · USDFC</span>
-          <span class="metric-value" id="faucet-usdfc-balance">–</span>
-        </div>
-        <div class="metric">
-          <span class="metric-label">Drips 24h · tFIL</span>
-          <span class="metric-value" id="faucet-fil-24h">–</span>
-        </div>
-        <div class="metric">
-          <span class="metric-label">Drips 24h · USDFC</span>
-          <span class="metric-value" id="faucet-usdfc-24h">–</span>
-        </div>
-        <div class="metric metric-wide">
-          <span class="metric-label">Drips · Lifetime</span>
-          <span class="metric-value" id="faucet-lifetime">–</span>
-        </div>
+  <section class="live-signals">
+    <h2>Live signals</h2>
+    <div class="signals-grid">
+      <div class="signal">
+        <span class="signal-label">Head epoch</span>
+        <span class="signal-value" id="signal-epoch">–</span>
       </div>
-      <footer class="tile-foot" id="faucet-foot">Waiting for /healthz&hellip;</footer>
-    </article>
-
-    <article class="tile" id="tile-calix" data-state="loading">
-      <header class="tile-head">
-        <h2>Calix</h2>
-        <span class="tile-state">
-          <span class="dot"></span><span class="state-label">–</span>
-        </span>
-      </header>
-      <p class="tile-sub">
-        <a href="https://calix.reiers.io">calix.reiers.io</a> · chain health + nv-upgrade validation
-      </p>
-      <div class="tile-body">
-        <div class="metric">
-          <span class="metric-label">Head epoch</span>
-          <span class="metric-value" id="calix-epoch">–</span>
-        </div>
-        <div class="metric">
-          <span class="metric-label">Head age</span>
-          <span class="metric-value" id="calix-head-age">–</span>
-        </div>
-        <div class="metric">
-          <span class="metric-label">Network version</span>
-          <span class="metric-value" id="calix-nv">–</span>
-        </div>
-        <div class="metric">
-          <span class="metric-label">Blocks per epoch</span>
-          <span class="metric-value" id="calix-bpe">–</span>
-        </div>
-        <div class="metric metric-wide">
-          <span class="metric-label">Next upgrade</span>
-          <span class="metric-value" id="calix-upgrade">–</span>
-        </div>
+      <div class="signal">
+        <span class="signal-label">Head age</span>
+        <span class="signal-value" id="signal-head-age">–</span>
       </div>
-      <footer class="tile-foot" id="calix-foot">Waiting for /api/v1/health&hellip;</footer>
-    </article>
-
-    <article class="tile" id="tile-sps" data-state="loading">
-      <header class="tile-head">
-        <h2>SP Test Targets</h2>
-        <span class="tile-state">
-          <span class="dot"></span><span class="state-label">–</span>
-        </span>
-      </header>
-      <p class="tile-sub">
-        stable calibration SPs · maintained across nv boundaries
-      </p>
-      <div class="tile-body" id="sp-body">
-        <div class="sp-row" data-miner="t0143103">
-          <span class="sp-id">t0143103</span>
-          <span class="sp-power">–</span>
-          <a class="sp-link" href="https://calibration.filfox.info/en/address/t0143103" rel="noopener">filfox&nbsp;↗</a>
-        </div>
-        <div class="sp-row" data-miner="t0144416">
-          <span class="sp-id">t0144416</span>
-          <span class="sp-power">–</span>
-          <a class="sp-link" href="https://calibration.filfox.info/en/address/t0144416" rel="noopener">filfox&nbsp;↗</a>
-        </div>
+      <div class="signal">
+        <span class="signal-label">Network version</span>
+        <span class="signal-value" id="signal-nv">–</span>
       </div>
-      <footer class="tile-foot" id="sp-foot">Waiting for calix miners endpoint&hellip;</footer>
-    </article>
-
-  </section>
-
-  <!-- SLO summary -->
-  <section class="slo">
-    <header class="section-head">
-      <h2>SLO summary</h2>
-      <span class="section-sub">Current state vs the promises in <a href="https://github.com/Reiers/plumbline/blob/main/SLO.md">SLO.md</a>.</span>
-    </header>
-    <div class="slo-grid">
-      <div class="slo-row" data-id="faucet-avail">
-        <span class="slo-name">Faucet availability</span>
-        <span class="slo-target">≥ 99.0% / 30d</span>
-        <span class="slo-value">–</span>
+      <div class="signal">
+        <span class="signal-label">Blocks per epoch</span>
+        <span class="signal-value" id="signal-bpe">–</span>
       </div>
-      <div class="slo-row" data-id="faucet-fil-latency">
-        <span class="slo-name">tFIL drip latency p99</span>
-        <span class="slo-target">≤ 60s / 30d</span>
-        <span class="slo-value">–</span>
+      <div class="signal">
+        <span class="signal-label">Faucet · tFIL</span>
+        <span class="signal-value" id="signal-fil">–</span>
       </div>
-      <div class="slo-row" data-id="faucet-usdfc-latency">
-        <span class="slo-name">USDFC drip latency p99</span>
-        <span class="slo-target">≤ 90s / 30d</span>
-        <span class="slo-value">–</span>
+      <div class="signal">
+        <span class="signal-label">Faucet · USDFC</span>
+        <span class="signal-value" id="signal-usdfc">–</span>
       </div>
-      <div class="slo-row" data-id="calix-avail">
-        <span class="slo-name">Calix availability</span>
-        <span class="slo-target">≥ 99.0% / 30d</span>
-        <span class="slo-value">–</span>
+      <div class="signal">
+        <span class="signal-label">Drips today · tFIL</span>
+        <span class="signal-value" id="signal-fil24">–</span>
       </div>
-      <div class="slo-row" data-id="calix-nv">
-        <span class="slo-name">Calix nv-validation latency</span>
-        <span class="slo-target">≤ 24h from activation</span>
-        <span class="slo-value">–</span>
-      </div>
-      <div class="slo-row" data-id="sp-avail">
-        <span class="slo-name">SP test-target availability</span>
-        <span class="slo-target">≥ 99.0% / 30d</span>
-        <span class="slo-value">–</span>
+      <div class="signal">
+        <span class="signal-label">Drips today · USDFC</span>
+        <span class="signal-value" id="signal-usdfc24">–</span>
       </div>
     </div>
-    <p class="slo-note">
-      <strong>v1 note:</strong> 30-day rolling numbers accumulate as the monitor
-      collects samples. Panels above show the current sampled window; full
-      rolling numbers are published in the monthly report at
-      <a href="https://github.com/Reiers/plumbline/tree/main/reports/">Reiers/plumbline/reports/</a>.
+    <p class="signals-note">
+      Machine-readable metrics for scraping:
+      <a href="https://faucet.reiers.io/metrics"><code>faucet.reiers.io/metrics</code></a> ·
+      <a href="https://calix.reiers.io/metrics"><code>calix.reiers.io/metrics</code></a>
     </p>
-  </section>
-
-  <!-- Recent faucet activity -->
-  <section class="activity">
-    <header class="section-head">
-      <h2>Recent faucet drips</h2>
-      <span class="section-sub">Last 10 successful drips · address + tx only, no PII</span>
-    </header>
-    <table class="activity-table" id="activity-table">
-      <thead>
-        <tr>
-          <th>Time</th>
-          <th>Asset</th>
-          <th>Address</th>
-          <th>Tx</th>
-        </tr>
-      </thead>
-      <tbody id="activity-body">
-        <tr><td colspan="4" class="empty">Loading&hellip;</td></tr>
-      </tbody>
-    </table>
   </section>
 
 </main>
 
-<footer class="page-foot">
-  <div class="foot-inner">
-    <span class="foot-brand">Plumbline · TSE Reiersen · Org. 929&nbsp;074&nbsp;912</span>
-    <span class="foot-links">
+<footer class="page-footer">
+  <div class="footer-inner">
+    <span>
       <a href="https://github.com/Reiers/plumbline">Umbrella</a> ·
       <a href="https://github.com/Reiers/plumbline-monitor">Monitor source</a> ·
       <a href="https://github.com/Reiers/plumbline/blob/main/SLO.md">SLO</a> ·
       <a href="https://github.com/Reiers/plumbline/blob/main/RUNBOOK.md">Runbook</a>
     </span>
-    <span class="foot-updated">Last refresh: <span id="last-refresh">–</span></span>
+    <span class="footer-updated">
+      Last refresh <span id="last-refresh">–</span>
+    </span>
   </div>
 </footer>
 

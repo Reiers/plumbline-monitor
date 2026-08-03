@@ -1,0 +1,12 @@
+[Unit]
+Description=Plumbline uptime probe timer (every 5 minutes)
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=5min
+AccuracySec=15s
+Persistent=true
+Unit=plumbline-uptime.service
+
+[Install]
+WantedBy=timers.target

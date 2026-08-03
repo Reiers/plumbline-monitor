@@ -50,6 +50,16 @@ server {
         add_header Cache-Control "public, max-age=60, must-revalidate";
     }
 
+    # 90-day uptime summary produced by the collector systemd timer.
+    # Keep cache short so the frontend picks up new state within a few
+    # minutes of the next probe.
+    location = /uptime.json {
+        alias /var/lib/plumbline-monitor/uptime.json;
+        default_type application/json;
+        add_header Cache-Control "public, max-age=60, must-revalidate";
+        add_header Access-Control-Allow-Origin "*";
+    }
+
     location /style.css {
         add_header Cache-Control "public, max-age=300, must-revalidate";
         types { text/css css; }

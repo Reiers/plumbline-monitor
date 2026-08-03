@@ -10,17 +10,22 @@ Public status page for the [Plumbline](https://github.com/Reiers/plumbline)
 Filecoin Calibration stability surface. Live at
 **<https://status.reiers.io>**.
 
-Reports live compliance against the commitments in
+Statuspage-style layout (banner, 90-day uptime bars per component,
+grouped services). Reports live compliance against the commitments in
 [Plumbline's SLO.md](https://github.com/Reiers/plumbline/blob/main/SLO.md).
 
 ---
 
 ## What this is
 
-A single-page static status dashboard that polls the public endpoints of
-each Plumbline service and shows current health, current SLO compliance,
-and recent activity. Zero backend, zero secrets — everything runs
-client-side against public HTTPS endpoints.
+Two moving parts:
+
+1. **Static frontend** in [`web/`](./web/) — vanilla HTML/CSS/JS, no
+   build step. Rendered client-side, polls public HTTPS endpoints.
+2. **Uptime collector** in [`collector/`](./collector/) — small
+   stdlib-only Python probe. Runs on the same host, hits the health
+   endpoints every 5 minutes, aggregates to a per-day 90-day summary
+   at `/uptime.json`.
 
 **Covered services:**
 
@@ -28,62 +33,51 @@ client-side against public HTTPS endpoints.
   for Calibration
 - **Calix** (<https://calix.reiers.io>) — Calibration chain-health
   console + nv-upgrade validation
-- **SP test targets** — `t0143103`, `t0144416`
+- **SP test target** — `t0143103` on Calibration
 
-**What it shows:**
+**What the page shows:**
 
-- Overall operational pill (OPERATIONAL / WATCH / DEGRADED)
-- Per-service health tiles with current SLI values
-- SLO summary: current status vs the targets in `SLO.md`
-- Recent faucet drips (last 10) as an activity feed
-- Calibration head epoch + network version + upgrade window
-
-The page reads live from:
-
-- `GET /healthz`, `/api/info`, `/api/stats`, `/api/recent` on the faucet
-- `GET /api/v1/health`, `/api/v1/status`, `/api/v1/upgrade` on calix
-- `GET /api/v1/miners/status` on calix (SP roster)
-
-All endpoints are CORS-open, so the page renders anywhere without a
-proxy.
-
----
-
-## Design
-
-Match the Calix aesthetic: dark background, calm greens, monospaced
-numerals. Data-dense, no marketing copy. Every panel has one job:
-answer "is this promise being kept, right now".
-
-Panels update every 30 seconds. A single failed poll shows a soft
-"stale" indicator without blanking the previous value.
+- Top status banner: `All Systems Operational` / `Degraded` / `Major Outage`
+- Grouped uptime bars per component, 90 vertical bars (one per day)
+  coloured by state: green (ok) / amber (watch, ≥95%) / red (bad) / grey (nodata)
+- Live signals grid: head epoch, head age, network version, blocks/epoch,
+  faucet balances, drips-today counters
+- Legend + machine-readable links (`/metrics`)
 
 ---
 
 ## Deploy
 
-Static files. Any web server that can serve HTML + CSS + JS with `Content-Type`
-set correctly will work.
-
-Canonical deployment is nginx on the Plumbline production box, served at
-`status.reiers.io` behind Cloudflare (orange cloud). See
-[`deploy/`](./deploy/) for the nginx vhost.
+Static files + a systemd timer for the collector. Canonical deployment
+is nginx on the Plumbline production box, serving `status.reiers.io`
+behind Cloudflare (orange cloud).
 
 ```bash
-# On the production box:
+# Frontend
 git clone https://github.com/Reiers/plumbline-monitor /opt/plumbline-monitor
-sudo ln -s /opt/plumbline-monitor/deploy/plumbline-monitor.nginx \
+sudo ln -sf /opt/plumbline-monitor/deploy/plumbline-monitor.nginx \
   /etc/nginx/sites-enabled/status.reiers.io
 sudo nginx -t && sudo systemctl reload nginx
+
+# Collector
+sudo useradd --system --home-dir /var/lib/plumbline-monitor \
+     --create-home --shell /usr/sbin/nologin plumbline-monitor
+sudo cp collector/plumbline-uptime.service \
+        collector/plumbline-uptime.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now plumbline-uptime.timer
 ```
 
 To deploy an update:
 
 ```bash
-cd /opt/plumbline-monitor
-git pull
-# nginx serves ./web/ directly, no restart needed
+cd /opt/plumbline-monitor && git pull
+# nginx serves web/ directly, no reload needed
+# collector timer picks up the new probe script on next fire
 ```
+
+See [`collector/README.md`](./collector/README.md) for probe internals
+and state thresholds.
 
 ---
 
@@ -96,20 +90,20 @@ python3 -m http.server 8080 --directory web
 # open http://localhost:8080
 ```
 
-No build step, no dependencies. Editing HTML/CSS/JS in `web/` and
-reloading the browser is the whole loop.
+Uptime bars will show `nodata` because there's no `uptime.json` locally.
+That's fine for iterating on the layout.
 
 ---
 
 ## Design principles
 
-1. **Client-side only.** No backend. Cannot fail behind a bad deploy of
-   its own — if it renders, the source of truth is the upstreams.
+1. **Static + probe.** Frontend has zero server state; collector is a
+   30-line-of-logic Python probe.
 2. **Public endpoints only.** Never scrape private admin surfaces.
-3. **Honest about staleness.** A missed poll is visible, not hidden.
+3. **Honest about staleness.** Missing days render as grey `nodata`,
+   not fake green.
 4. **Match the SLO.** Every panel maps to a named SLO or SLI in
    [`Reiers/plumbline/SLO.md`](https://github.com/Reiers/plumbline/blob/main/SLO.md).
-   If a metric isn't in the SLO, it doesn't belong on this page.
 
 ---
 
