@@ -314,7 +314,16 @@ function rank(states) {
 
 // ---------- top-level tick --------------------------------------------
 
+// Populate the 'Today' incident-day heading with the real date.
+function setTodayLabel() {
+  const el = document.getElementById('incident-today-date');
+  if (!el) return;
+  const opts = { year: 'numeric', month: 'short', day: 'numeric' };
+  el.textContent = `Today \u00b7 ${new Date().toLocaleDateString('en-US', opts)}`;
+}
+
 async function tick() {
+  setTodayLabel();
   await Promise.all([pollLive(), refreshUptime()]);
 }
 

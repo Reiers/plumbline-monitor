@@ -298,7 +298,7 @@ code {
 }
 .uptime-bar .u-bar[data-state="watch"]  { background: var(--watch); }
 .uptime-bar .u-bar[data-state="bad"]    { background: var(--bad); }
-.uptime-bar .u-bar[data-state="nodata"] { background: var(--nodata); }
+.uptime-bar .u-bar[data-state="nodata"] { background: var(--ok-soft); }
 .uptime-bar .u-bar:hover { filter: brightness(0.9); }
 
 .uptime-labels {
@@ -344,6 +344,32 @@ code {
 .chip-watch  { background: var(--watch); }
 .chip-bad    { background: var(--bad); }
 .chip-nodata { background: var(--nodata); }
+
+/* --------------------------------------------------------- incidents */
+
+.incidents {
+  margin-top: 40px;
+  padding-top: 28px;
+  border-top: 1px solid var(--border);
+}
+.incidents h2 {
+  margin: 0 0 14px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--fg);
+}
+.incident-day h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+}
+.incident-day .muted { color: var(--fg-3); font-size: 14px; margin: 0; }
+.incidents-note {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--fg-3);
+}
 
 /* -------------------------------------------------------- live signals */
 
@@ -410,8 +436,10 @@ code {
   gap: 16px;
   flex-wrap: wrap;
 }
-.footer-inner a { color: var(--fg-2); }
-.footer-inner a:hover { color: var(--accent); }
+.footer-inner a {
+  color: var(--accent);
+}
+.footer-inner a:hover { color: var(--accent-2); text-decoration: underline; }
 
 /* ---------------------------------------------------------- responsive */
 
