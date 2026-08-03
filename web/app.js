@@ -179,15 +179,20 @@ async function pollFaucet() {
 
   if (stats.ok) {
     const s = stats.value;
-    // API returns per-asset lifetime + 24h counters; be defensive about shape.
-    const fil24 = s.fil?.dripsLast24h ?? s.fil24h ?? s.fil?.h24 ?? s.dripsLast24hFil ?? null;
-    const usd24 = s.usdfc?.dripsLast24h ?? s.usdfc24h ?? s.usdfc?.h24 ?? s.dripsLast24hUsdfc ?? null;
-    const filLife = s.fil?.dripsLifetime ?? s.filLifetime ?? s.fil?.lifetime ?? s.dripsLifetimeFil ?? null;
-    const usdLife = s.usdfc?.dripsLifetime ?? s.usdfcLifetime ?? s.usdfc?.lifetime ?? s.dripsLifetimeUsdfc ?? null;
+    // Faucet /api/stats returns:
+    //   totalDripsFil, totalDripsUsdfc          (lifetime counts)
+    //   totalFilWei,  totalUsdfcWei             (lifetime amounts)
+    //   filDripsToday, usdfcDripsToday          (rolling 24h counts)
+    // Read with fallbacks for legacy shapes just in case.
+    const fil24   = s.filDripsToday   ?? s.fil?.dripsLast24h   ?? null;
+    const usd24   = s.usdfcDripsToday ?? s.usdfc?.dripsLast24h ?? null;
+    const filLife = s.totalDripsFil   ?? s.fil?.dripsLifetime  ?? null;
+    const usdLife = s.totalDripsUsdfc ?? s.usdfc?.dripsLifetime ?? null;
     setText('faucet-fil-24h',   fmtInt(fil24));
     setText('faucet-usdfc-24h', fmtInt(usd24));
-    if (filLife !== null && usdLife !== null) {
-      setText('faucet-lifetime', `${fmtInt(filLife)} tFIL · ${fmtInt(usdLife)} USDFC`);
+    if (filLife !== null || usdLife !== null) {
+      setText('faucet-lifetime',
+        `${fmtInt(filLife)} tFIL · ${fmtInt(usdLife)} USDFC`);
     }
   }
 
@@ -270,61 +275,74 @@ async function pollCalix() {
   let stateLabel = 'Operational';
   let footText  = 'Fresh · ' + new Date().toLocaleTimeString();
 
+  // /api/v1/health = { ok: bool, ringFresh, ringSize, ts }. Only the `ok`
+  // flag is a hard signal here; head-age comes from /api/v1/status.
   if (!health.ok) {
-    tileState = 'bad';
+    tileState  = 'bad';
     stateLabel = 'Down';
     footText   = `/api/v1/health error: ${health.error}`;
-  } else {
-    const h = health.value;
-    if (h.chainHeadAgeSeconds !== undefined) {
-      setText('calix-head-age', fmtSeconds(h.chainHeadAgeSeconds));
-      if (h.chainHeadAgeSeconds > 300) {
-        tileState = 'watch';
-        stateLabel = 'Head lagging';
-      }
-    }
-    if (h.epoch !== undefined) setText('calix-epoch', fmtInt(h.epoch));
-    if (h.networkVersion !== undefined) setText('calix-nv', `nv${h.networkVersion}`);
+  } else if (health.value && health.value.ok === false) {
+    tileState  = 'bad';
+    stateLabel = 'Reports not-ok';
+    footText   = '/api/v1/health returned ok:false';
   }
 
+  // /api/v1/status = { level, headline, detail, epoch, networkVersion,
+  //                    headAgeSeconds, upgradeName, upgradeSecsLeft, forked }.
   if (status.ok) {
     const s = status.value;
     if (s.epoch !== undefined) setText('calix-epoch', fmtInt(s.epoch));
     if (s.networkVersion !== undefined) setText('calix-nv', `nv${s.networkVersion}`);
-    if (s.blocksPerEpoch !== undefined) setText('calix-bpe', Number(s.blocksPerEpoch).toFixed(2));
-    // Overall status pill from calix drives the tile if worse than current.
-    const op = String(s.operational || s.status || '').toUpperCase();
-    if (op === 'UPGRADE_PENDING' || op === 'UPGRADE PENDING') {
-      tileState = 'upgrade';
+    if (s.headAgeSeconds !== undefined) {
+      setText('calix-head-age', fmtSeconds(s.headAgeSeconds));
+      if (s.headAgeSeconds > 300 && tileState === 'ok') {
+        tileState  = 'watch';
+        stateLabel = 'Head lagging';
+      }
+    }
+    if (s.forked === true) {
+      tileState  = 'bad';
+      stateLabel = 'Forked';
+    }
+    const level = String(s.level || s.operational || '').toLowerCase();
+    if (level === 'upgrade_pending' || level === 'upgrade-pending' || level === 'upgrade pending') {
+      tileState  = 'upgrade';
       stateLabel = 'Upgrade pending';
-    } else if (op === 'DEGRADED') {
-      tileState = 'bad';
+    } else if (level === 'degraded') {
+      tileState  = 'bad';
       stateLabel = 'Degraded';
-    } else if (op === 'WATCH') {
-      if (tileState === 'ok') { tileState = 'watch'; stateLabel = 'Watch'; }
+    } else if (level === 'watch' && tileState === 'ok') {
+      tileState  = 'watch';
+      stateLabel = 'Watch';
     }
   }
 
+  // /api/v1/signals = { blocksPerEpoch: { value, unit, status }, … }.
   if (signals.ok) {
     const g = signals.value;
-    // Try common shape: array of KPIs, or an object of KPIs.
-    const bpe = pickSignal(g, 'blocksPerEpoch', 'blocks_per_epoch');
-    if (bpe !== null) setText('calix-bpe', Number(bpe).toFixed(2));
+    const bpe = g.blocksPerEpoch;
+    if (bpe && bpe.value !== undefined) {
+      setText('calix-bpe', Number(bpe.value).toFixed(2));
+    }
   }
 
+  // /api/v1/upgrade = { name, networkVersion, epoch, currentEpoch,
+  //                     secondsLeft, epochsLeft, timestamp, timestampISO, … }.
   if (upgrade.ok) {
     const u = upgrade.value;
-    if (u.codename && u.activationEpoch) {
-      const eta = u.eta || u.etaSeconds || null;
-      const parts = [`${u.codename} (nv${u.networkVersion || '?'})`];
-      if (eta !== null) parts.push(`in ${fmtSeconds(eta)}`);
-      else if (u.activationUnix) {
-        const ageS = Math.max(0, Math.floor((u.activationUnix * 1000 - Date.now()) / 1000));
-        if (ageS > 0) parts.push(`in ${fmtSeconds(ageS)}`);
+    if (u.name) {
+      const secsLeft = Number(u.secondsLeft);
+      const parts = [`${u.name} (nv${u.networkVersion ?? '?'})`];
+      if (Number.isFinite(secsLeft) && secsLeft > 0) {
+        parts.push(`in ${fmtSeconds(secsLeft)}`);
+        if (tileState === 'ok' && secsLeft < 7 * 86400) {
+          tileState  = 'upgrade';
+          stateLabel = 'Upgrade pending';
+        }
+      } else {
+        parts.push('activated');
       }
       setText('calix-upgrade', parts.join(' · '));
-    } else if (u.next && u.next.codename) {
-      setText('calix-upgrade', u.next.codename);
     } else {
       setText('calix-upgrade', 'None scheduled');
     }
@@ -332,21 +350,6 @@ async function pollCalix() {
 
   setTileState('tile-calix', tileState, stateLabel, footText);
   return tileState;
-}
-
-// Try to pluck a named signal from calix /signals payload regardless of shape.
-function pickSignal(obj, ...keys) {
-  if (!obj) return null;
-  for (const k of keys) {
-    if (obj[k] !== undefined && obj[k] !== null) return obj[k];
-    if (obj.signals && obj.signals[k] !== undefined) return obj.signals[k];
-  }
-  if (Array.isArray(obj.signals)) {
-    for (const s of obj.signals) {
-      for (const k of keys) if (s.key === k || s.name === k) return s.value ?? s.current ?? null;
-    }
-  }
-  return null;
 }
 
 async function pollSPs() {
