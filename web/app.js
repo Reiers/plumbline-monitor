@@ -22,7 +22,7 @@ const ENDPOINTS = {
   calixStatus:  'https://calix.reiers.io/api/v1/status',
   calixUpgrade: 'https://calix.reiers.io/api/v1/upgrade',
   calixSignals: 'https://calix.reiers.io/api/v1/signals',
-  calixMiners:  'https://calix.reiers.io/api/v1/miners/status?miners=t0143103,t0144416',
+  calixMiners:  'https://calix.reiers.io/api/v1/miners/status?addrs=t0143103,t0144416',
 };
 
 // ---------- fetch helpers ----------------------------------------------
@@ -355,20 +355,24 @@ async function pollSPs() {
     setTileState('tile-sps', 'watch', 'Feed offline', `Miner probe error: ${r.error}`);
     return 'watch';
   }
-  // Shape: object keyed by miner id, or an array. Be defensive.
+  // Shape: { miners: [{ address, status, blocksLast60, ... }], ... }
   const list = Array.isArray(r.value) ? r.value
-             : (r.value.miners || Object.values(r.value));
-  let anyActive = false;
+             : (r.value.miners || []);
+  let anyActive  = false;
   let bothActive = true;
-  for (const m of list || []) {
-    const id     = m.id || m.miner || m.address;
-    const active = m.active ?? m.isActive ?? (m.status ? m.status === 'active' : null);
+  for (const m of list) {
+    const id     = m.address || m.id || m.miner;
+    const status = String(m.status || '').toLowerCase();
     const power  = m.rawBytePower || m.qualityAdjPower || m.power || null;
+    const blocks = m.blocksLast60 !== undefined ? m.blocksLast60 : null;
+    const active = status === 'active' || status === 'ok' || (m.active ?? m.isActive ?? null) === true;
     const row = document.querySelector(`.sp-row[data-miner="${id}"] .sp-power`);
     if (row) {
-      if (power) row.textContent = fmtPower(power);
-      else if (active === false) row.textContent = 'inactive';
-      else if (active === true)  row.textContent = 'active';
+      const parts = [];
+      if (power) parts.push(fmtPower(power));
+      if (blocks !== null) parts.push(`${blocks} blk/60ep`);
+      if (!parts.length) parts.push(status || '–');
+      row.textContent = parts.join(' · ');
     }
     if (active) anyActive = true;
     else bothActive = false;
