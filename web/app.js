@@ -320,6 +320,14 @@ function setTodayLabel() {
   if (!el) return;
   const opts = { year: 'numeric', month: 'short', day: 'numeric' };
   el.textContent = `Today \u00b7 ${new Date().toLocaleDateString('en-US', opts)}`;
+  // If a dated incident block exists for today, it replaces the empty 'Today' stub.
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const dated = document.querySelector(`.incident-day[data-date="${todayISO}"]`);
+  if (dated) {
+    document.getElementById('incident-today').style.display = 'none';
+    const h = dated.querySelector('h3');
+    if (h) h.textContent = el.textContent;
+  }
 }
 
 async function tick() {

@@ -365,6 +365,38 @@ code {
   color: var(--fg);
 }
 .incident-day .muted { color: var(--fg-3); font-size: 14px; margin: 0; }
+.incident-day + .incident-day { margin-top: 18px; }
+.incident {
+  margin-top: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.incident-title {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg);
+}
+.incident-badge {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  vertical-align: 2px;
+}
+.incident-resolved { background: rgba(46, 160, 67, 0.15); color: #2ea043; }
+.incident-update {
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--fg-2, var(--fg));
+}
+.incident-update:last-child { margin-bottom: 0; }
 .incidents-note {
   margin: 12px 0 0;
   font-size: 12px;
