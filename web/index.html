@@ -150,9 +150,19 @@
       <h3>Oct 1, 2026</h3>
       <div class="incident">
         <p class="incident-title"><span class="incident-badge incident-resolved">Resolved</span>SP test target t0143103 stopped producing blocks</p>
+        <p class="incident-update"><strong>Update</strong> · Oct 6 · Confirmed: the 17 faulted sectors recovered at their next proving window on Oct 2. t0143103 has 1,285 active sectors and 0 faulty. Post-mortem: <a href="https://github.com/Reiers/plumbline/blob/main/reports/incidents/2026-10-01-t0143103-block-production.md">reports/incidents/2026-10-01</a>.</p>
         <p class="incident-update"><strong>Resolved</strong> · 17:10 UTC · Block production resumed by 17:03 UTC and the miner is winning and landing blocks every round again. Both Curio nodes are registered and sharing PoSt work. The 17 faulted sectors are expected to auto-recover at their next proving window (Oct 2, ~13:05 UTC); we will confirm.</p>
         <p class="incident-update"><strong>Identified</strong> · 16:40 UTC · Both Curio nodes had lost their machine registration in the cluster database at about 12:50 to 13:10 UTC, so the task scheduler could not claim any work: no WinningPoSt (blocks) and one missed WindowPoSt deadline (17 of 1,285 sectors marked faulty, power otherwise unchanged). Curio was restarted on both nodes (16:40 and 16:48 UTC); the queued backlog of stale election tasks drained by ~17:00 UTC.</p>
         <p class="incident-update"><strong>Impact</strong> · About 4 hours without blocks from the SP test target (13:00 to 17:03 UTC). Faucet and Calix were not affected. Lotus stayed in sync throughout. Root cause of the lost registrations is under investigation.</p>
+      </div>
+    </div>
+    <div class="incident-day" data-date="2026-08-24">
+      <h3>Aug 24, 2026</h3>
+      <div class="incident">
+        <p class="incident-title"><span class="incident-badge incident-resolved">Resolved</span>Faucet and Calix unreachable (host network loss)</p>
+        <p class="incident-update"><strong>Resolved</strong> · 15:10 UTC · Connectivity returned on its own and all services answered normally. No restart was needed.</p>
+        <p class="incident-update"><strong>Identified</strong> · The host serving the faucet, Calix and this status page lost network connectivity in both directions. Services kept running, but no requests reached them.</p>
+        <p class="incident-update"><strong>Impact</strong> · 10:00 to 15:10 UTC. Faucet and Calix unavailable. SP test target t0143103 could not be observed (it is measured through Calix). Posted retroactively on Oct 6. Post-mortem: <a href="https://github.com/Reiers/plumbline/blob/main/reports/incidents/2026-08-24-host-network-loss.md">reports/incidents/2026-08-24</a>.</p>
       </div>
     </div>
     <p class="incidents-note">
