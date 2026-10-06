@@ -482,3 +482,7 @@ code {
   .page { padding: 24px 16px 16px; }
   .status-banner { padding: 12px 16px; }
 }
+
+.header-actions { display: flex; gap: 8px; align-items: center; }
+.btn-secondary { background: transparent; color: #1a7f37; border: 1px solid #3ECF63; }
+.btn-secondary:hover { background: rgba(62, 207, 99, 0.08); }
