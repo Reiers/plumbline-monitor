@@ -129,7 +129,6 @@ function setBanner(state, text) {
 const MAINTENANCE = {
   components: ['sp'],
   // 2026-10-15 10:00 Europe/Oslo (CEST, UTC+2) = 08:00 UTC
-  since: '2026-10-12',
   until: '2026-10-15T08:00:00Z',
   componentText: 'Scheduled maintenance. Back tomorrow 10:00 (Europe/Oslo).',
   bannerText: 'Scheduled maintenance on the calibration host. SP test target back tomorrow 10:00 (Europe/Oslo).',
@@ -319,20 +318,56 @@ async function pollLive() {
   const rankMap = { ok: 'Operational', watch: 'Degraded Performance', bad: 'Major Outage' };
   setGroupState('surface', worst, rankMap[worst]);
 
-    if (maintenanceActive()) {
-    const since = MAINTENANCE.since ? Date.parse(MAINTENANCE.since + "T00:00:00Z") : null;
+  if (maintenanceActive()) {
+    setBanner('watch', MAINTENANCE.bannerText);
+    document.getElementById('status-banner').classList.add('is-maintenance');
+    setGroupState('surface', 'watch', 'Scheduled Maintenance');
+  } else if (worst === 'ok') {
+    setBanner('ok', 'All Systems Operational');
+  } else if (worst === 'watch') {
+    setBanner('watch', 'Some Systems Experiencing Degraded Performance');
+  } else {
+    setBanner('bad', 'Major Outage On One Or More Systems');
+  }
+
+  setText('last-refresh', new Date().toLocaleTimeString());
+}
+
+function rank(states) {
+  if (states.includes('bad')) return 'bad';
+  if (states.includes('watch')) return 'watch';
+  return 'ok';
+}
+
+// ---------- top-level tick --------------------------------------------
+
+// Populate the 'Today' incident-day heading with the real date.
+function setTodayLabel() {
+  const el = document.getElementById('incident-today-date');
+  if (!el) return;
+  const opts = { year: 'numeric', month: 'short', day: 'numeric' };
+  el.textContent = `Today \u00b7 ${new Date().toLocaleDateString('en-US', opts)}`;
+  // If a dated incident block exists for today, it replaces the empty 'Today' stub.
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const dated = document.querySelector(`.incident-day[data-date="${todayISO}"]`);
+  if (dated) {
+    document.getElementById('incident-today').style.display = 'none';
+    const h = dated.querySelector('h3');
+    if (h) h.textContent = el.textContent;
+  }
+}
+
+async function tick() {
+  setTodayLabel();
+  await Promise.all([pollLive(), refreshUptime()]);
+  if (maintenanceActive()) {
     for (const comp of (MAINTENANCE.components || [])) {
       const bar = document.querySelector(`.uptime-bar[data-bar="${comp}"]`);
       if (!bar) continue;
-      const bars = bar.children;
-      for (let i = 0; i < bars.length; i++) {
-        const daysAgo = bars.length - 1 - i;
-        const iso = isoDay(daysAgo);
-        const dayMs = Date.parse(iso + "T00:00:00Z");
-        if (since !== null && dayMs < since) continue;
-        bars[i].dataset.state = "watch";
-        bars[i].title = iso + ": scheduled maintenance";
-      }
+      const last = bar.lastElementChild; // today
+      if (!last) continue;
+      last.dataset.state = 'watch';
+      last.title = (last.title ? last.title.split(':')[0] : 'today') + ': scheduled maintenance';
     }
   }
 }
