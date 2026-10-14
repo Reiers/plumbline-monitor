@@ -486,3 +486,8 @@ code {
 .header-actions { display: flex; gap: 8px; align-items: center; }
 .btn-secondary { background: transparent; color: #1a7f37; border: 1px solid #3ECF63; }
 .btn-secondary:hover { background: rgba(62, 207, 99, 0.08); }
+
+
+/* Scheduled maintenance banner: smaller than default outage banner. */
+.status-banner.is-maintenance .banner-text { font-size: 0.95rem; font-weight: 500; letter-spacing: 0.01em; }
+.status-banner.is-maintenance { padding-top: 10px; padding-bottom: 10px; }

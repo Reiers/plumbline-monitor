@@ -130,8 +130,8 @@ const MAINTENANCE = {
   components: ['sp'],
   // 2026-10-15 10:00 Europe/Oslo (CEST, UTC+2) = 08:00 UTC
   until: '2026-10-15T08:00:00Z',
-  componentText: 'Scheduled maintenance — back tomorrow 10:00 (Europe/Oslo)',
-  bannerText: 'Scheduled maintenance on the calibration host — SP test target back tomorrow 10:00 (Europe/Oslo)',
+  componentText: 'Scheduled maintenance. Back tomorrow 10:00 (Europe/Oslo).',
+  bannerText: 'Scheduled maintenance on the calibration host. SP test target back tomorrow 10:00 (Europe/Oslo).',
 };
 
 function maintenanceActive() {
@@ -320,6 +320,7 @@ async function pollLive() {
 
   if (maintenanceActive()) {
     setBanner('watch', MAINTENANCE.bannerText);
+    document.getElementById('status-banner').classList.add('is-maintenance');
     setGroupState('surface', 'watch', 'Scheduled Maintenance');
   } else if (worst === 'ok') {
     setBanner('ok', 'All Systems Operational');
@@ -359,6 +360,16 @@ function setTodayLabel() {
 async function tick() {
   setTodayLabel();
   await Promise.all([pollLive(), refreshUptime()]);
+  if (maintenanceActive()) {
+    for (const comp of (MAINTENANCE.components || [])) {
+      const bar = document.querySelector(`.uptime-bar[data-bar="${comp}"]`);
+      if (!bar) continue;
+      const last = bar.lastElementChild; // today
+      if (!last) continue;
+      last.dataset.state = 'watch';
+      last.title = (last.title ? last.title.split(':')[0] : 'today') + ': scheduled maintenance';
+    }
+  }
 }
 
 tick().catch(console.error);
