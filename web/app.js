@@ -121,6 +121,25 @@ function setBanner(state, text) {
   setText('banner-text', text);
 }
 
+// ---------- scheduled maintenance override ----------------------------
+// Planned maintenance on the calibration host(s). While the window is
+// active, listed components and the top banner show a maintenance notice
+// instead of "Major Outage". Clear by setting MAINTENANCE = null (or
+// letting until pass).
+const MAINTENANCE = {
+  components: ['sp'],
+  // 2026-10-15 10:00 Europe/Oslo (CEST, UTC+2) = 08:00 UTC
+  until: '2026-10-15T08:00:00Z',
+  componentText: 'Scheduled maintenance — back tomorrow 10:00 (Europe/Oslo)',
+  bannerText: 'Scheduled maintenance on the calibration host — SP test target back tomorrow 10:00 (Europe/Oslo)',
+};
+
+function maintenanceActive() {
+  if (!MAINTENANCE || !MAINTENANCE.until) return false;
+  return Date.now() < Date.parse(MAINTENANCE.until);
+}
+
+
 // ---------- rendering: uptime bars ------------------------------------
 
 /*
@@ -288,6 +307,10 @@ async function pollLive() {
       }
     }
   }
+  if (maintenanceActive() && MAINTENANCE.components.includes('sp')) {
+    spState = 'watch';
+    spText  = MAINTENANCE.componentText;
+  }
   setComponentState('sp', spState, spText);
 
   // Group + banner --------------------------------------------------
@@ -295,7 +318,10 @@ async function pollLive() {
   const rankMap = { ok: 'Operational', watch: 'Degraded Performance', bad: 'Major Outage' };
   setGroupState('surface', worst, rankMap[worst]);
 
-  if (worst === 'ok') {
+  if (maintenanceActive()) {
+    setBanner('watch', MAINTENANCE.bannerText);
+    setGroupState('surface', 'watch', 'Scheduled Maintenance');
+  } else if (worst === 'ok') {
     setBanner('ok', 'All Systems Operational');
   } else if (worst === 'watch') {
     setBanner('watch', 'Some Systems Experiencing Degraded Performance');
