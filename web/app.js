@@ -129,6 +129,7 @@ function setBanner(state, text) {
 const MAINTENANCE = {
   components: ['sp'],
   // 2026-10-15 10:00 Europe/Oslo (CEST, UTC+2) = 08:00 UTC
+  since: '2026-10-12',
   until: '2026-10-15T08:00:00Z',
   componentText: 'Scheduled maintenance. Back tomorrow 10:00 (Europe/Oslo).',
   bannerText: 'Scheduled maintenance on the calibration host. SP test target back tomorrow 10:00 (Europe/Oslo).',
@@ -364,10 +365,16 @@ async function tick() {
     for (const comp of (MAINTENANCE.components || [])) {
       const bar = document.querySelector(`.uptime-bar[data-bar="${comp}"]`);
       if (!bar) continue;
-      const last = bar.lastElementChild; // today
-      if (!last) continue;
-      last.dataset.state = 'watch';
-      last.title = (last.title ? last.title.split(':')[0] : 'today') + ': scheduled maintenance';
+      const since = MAINTENANCE.since ? Date.parse(MAINTENANCE.since + 'T00:00:00Z') : null;
+      const bars = bar.children;
+      for (let i = 0; i < bars.length; i++) {
+        const daysAgo = bars.length - 1 - i;
+        const iso = isoDay(daysAgo);
+        const dayMs = Date.parse(iso + 'T00:00:00Z');
+        if (since !== null && dayMs < since) continue;
+        bars[i].dataset.state = 'watch';
+        bars[i].title = iso + ': scheduled maintenance';
+      }
     }
   }
 }
