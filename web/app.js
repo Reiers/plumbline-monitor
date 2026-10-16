@@ -126,14 +126,11 @@ function setBanner(state, text) {
 // active, listed components and the top banner show a maintenance notice
 // instead of "Major Outage". Clear by setting MAINTENANCE = null (or
 // letting until pass).
-const MAINTENANCE = {
-  components: ['sp'],
-  // Planned storage-server work. Window extended once; SP comes back today.
-  since: '2026-10-12',
-  until: '2026-10-16T22:00:00Z',
-  componentText: 'Planned maintenance. SP Test Target back up for stability today.',
-  bannerText: 'Planned storage-server maintenance (Mon Oct 12 to today). SP Test Target coming back up for stability today.',
-};
+const MAINTENANCE = null;
+// Previous window (closed 2026-10-16): planned storage-server maintenance Oct 12-16.
+// To open a new window:
+//   const MAINTENANCE = { components:['sp'], since:'YYYY-MM-DD', until:'YYYY-MM-DDTHH:MM:SSZ',
+//                        componentText:'...', bannerText:'...' };
 
 function maintenanceActive() {
   if (!MAINTENANCE || !MAINTENANCE.until) return false;
