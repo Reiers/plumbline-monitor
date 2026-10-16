@@ -26,6 +26,8 @@
   --ok-soft:   #d6f5e0;
   --watch:     #f5a623;
   --watch-soft:#fde9c8;
+  --maint:     #f1c40f;
+  --maint-soft:#fcf0b1;
   --bad:       #ef4444;
   --bad-soft:  #fbd6d6;
   --nodata:    #d1d5db;
@@ -298,6 +300,7 @@ code {
 }
 .uptime-bar .u-bar[data-state="watch"]  { background: var(--watch); }
 .uptime-bar .u-bar[data-state="bad"]    { background: var(--bad); }
+.uptime-bar .u-bar[data-state="maint"]  { background: var(--maint); }
 .uptime-bar .u-bar[data-state="nodata"] { background: var(--ok-soft); }
 .uptime-bar .u-bar:hover { filter: brightness(0.9); }
 
@@ -342,6 +345,7 @@ code {
 }
 .chip-ok     { background: var(--ok); }
 .chip-watch  { background: var(--watch); }
+.chip-maint  { background: var(--maint); }
 .chip-bad    { background: var(--bad); }
 .chip-nodata { background: var(--nodata); }
 

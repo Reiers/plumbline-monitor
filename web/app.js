@@ -128,11 +128,11 @@ function setBanner(state, text) {
 // letting until pass).
 const MAINTENANCE = {
   components: ['sp'],
-  // 2026-10-15 10:00 Europe/Oslo (CEST, UTC+2) = 08:00 UTC
+  // Planned storage-server work. Window extended once; SP comes back today.
   since: '2026-10-12',
-  until: '2026-10-15T08:00:00Z',
-  componentText: 'Scheduled maintenance. Back tomorrow 10:00 (Europe/Oslo).',
-  bannerText: 'Scheduled maintenance on the calibration host. SP test target back tomorrow 10:00 (Europe/Oslo).',
+  until: '2026-10-16T22:00:00Z',
+  componentText: 'Planned maintenance. SP Test Target back up for stability today.',
+  bannerText: 'Planned storage-server maintenance (Mon Oct 12 to today). SP Test Target coming back up for stability today.',
 };
 
 function maintenanceActive() {
@@ -372,8 +372,8 @@ async function tick() {
         const iso = isoDay(daysAgo);
         const dayMs = Date.parse(iso + 'T00:00:00Z');
         if (since !== null && dayMs < since) continue;
-        bars[i].dataset.state = 'watch';
-        bars[i].title = iso + ': scheduled maintenance';
+        bars[i].dataset.state = 'maint';
+        bars[i].title = iso + ': planned maintenance';
       }
     }
   }
