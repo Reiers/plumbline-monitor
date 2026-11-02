@@ -20,8 +20,11 @@ grouped services). Reports live compliance against the commitments in
 
 Two moving parts:
 
-1. **Static frontend** in [`web/`](./web/) — vanilla HTML/CSS/JS, no
-   build step. Rendered client-side, polls public HTTPS endpoints.
+1. **Static frontend** in [`web/`](./web/): vanilla HTML/CSS/JS, no
+   build step. Rendered client-side. Live signals come from the
+   [Plumbline builder API v1](https://github.com/Reiers/plumbline-faucet/blob/main/docs/api.md)
+   (`/api/v1/faucet/status`, `/api/v1/network`, `/api/v1/sp`), with a
+   per-component fallback to the direct faucet and Calix endpoints.
 2. **Uptime collector** in [`collector/`](./collector/) — small
    stdlib-only Python probe. Runs on the same host, hits the health
    endpoints every 5 minutes, aggregates to a per-day 90-day summary
@@ -92,6 +95,16 @@ python3 -m http.server 8080 --directory web
 
 Uptime bars will show `nodata` because there's no `uptime.json` locally.
 That's fine for iterating on the layout.
+
+To point a local copy at a local faucet, add `?api=http://127.0.0.1:8003`
+to the URL. The override only works when the page is served from
+localhost.
+
+Tests for the builder API v1 mapping (Node 20+, no dependencies):
+
+```bash
+node --test test/*.test.js
+```
 
 ---
 
