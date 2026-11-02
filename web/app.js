@@ -4,11 +4,15 @@
  * Vanilla JS. Two data sources:
  *
  *   1. /uptime.json (same origin) - 90-day history collected by a
- *      systemd timer on the Hetzner box (see collector/). Renders the
+ *      systemd timer on the Plumbline host (see collector/). Renders the
  *      uptime bar strips.
  *
- *   2. Live public endpoints on faucet + calix - fills the "Live
- *      signals" grid and drives the top banner colour.
+ *   2. The Plumbline builder API v1 on faucet.reiers.io - fills the
+ *      "Live signals" grid and drives the top banner colour:
+ *        GET /api/v1/faucet/status, /api/v1/network, /api/v1/sp
+ *      If the API is unreachable, or reports stale Calix data, the page
+ *      falls back to the original direct endpoints for that component,
+ *      so the faucet being down never hides Calix health.
  *
  * Every metric maps to a named SLI in Reiers/plumbline/SLO.md.
  */
@@ -16,15 +20,21 @@
 const REFRESH_MS      = 30_000;
 const UPTIME_URL      = '/uptime.json';
 const BAR_COUNT       = 90;    // 90-day chart
+const SP_TARGET       = 't0143103';
 
+const API_BASE = PlumblineApi.resolveApiBase(window.location);
+const API_V1   = PlumblineApi.endpoints(API_BASE);
+
+// Direct endpoints, used only as a fallback when the builder API cannot
+// answer for a component.
 const ENDPOINTS = {
-  faucetHealth: 'https://faucet.reiers.io/healthz',
-  faucetInfo:   'https://faucet.reiers.io/api/info',
-  faucetStats:  'https://faucet.reiers.io/api/stats',
+  faucetHealth: API_BASE + '/healthz',
+  faucetInfo:   API_BASE + '/api/info',
+  faucetStats:  API_BASE + '/api/stats',
   calixHealth:  'https://calix.reiers.io/api/v1/health',
   calixStatus:  'https://calix.reiers.io/api/v1/status',
   calixSignals: 'https://calix.reiers.io/api/v1/signals',
-  calixMiners:  'https://calix.reiers.io/api/v1/miners/status?addrs=t0143103',
+  calixMiners:  'https://calix.reiers.io/api/v1/miners/status?addrs=' + SP_TARGET,
 };
 
 const COMPONENTS = ['faucet', 'calix', 'sp'];
@@ -51,6 +61,13 @@ async function getJSON(url, timeoutMs = 8000) {
 async function safe(url) {
   try { return { ok: true, value: await getJSON(url) }; }
   catch (e) { return { ok: false, error: e && e.message ? e.message : String(e) }; }
+}
+
+// For builder API v1 calls: only a 200 with apiVersion "1" counts.
+async function safeV1(url) {
+  const r = await safe(url);
+  if (r.ok && !PlumblineApi.isV1(r.value)) return { ok: false, error: 'not a v1 response' };
+  return r;
 }
 
 // ---------- formatting ------------------------------------------------
@@ -126,14 +143,11 @@ function setBanner(state, text) {
 // active, listed components and the top banner show a maintenance notice
 // instead of "Major Outage". Clear by setting MAINTENANCE = null (or
 // letting until pass).
-const MAINTENANCE = {
-  components: ['sp'],
-  // 2026-10-15 10:00 Europe/Oslo (CEST, UTC+2) = 08:00 UTC
-  since: '2026-10-12',
-  until: '2026-10-15T08:00:00Z',
-  componentText: 'Scheduled maintenance. Back tomorrow 10:00 (Europe/Oslo).',
-  bannerText: 'Scheduled maintenance on the calibration host. SP test target back tomorrow 10:00 (Europe/Oslo).',
-};
+const MAINTENANCE = null;
+// Previous window (closed 2026-10-16): planned storage-server maintenance Oct 12-16.
+// To open a new window:
+//   const MAINTENANCE = { components:['sp'], since:'YYYY-MM-DD', until:'YYYY-MM-DDTHH:MM:SSZ',
+//                        componentText:'...', bannerText:'...' };
 
 function maintenanceActive() {
   if (!MAINTENANCE || !MAINTENANCE.until) return false;
@@ -220,21 +234,16 @@ async function refreshUptime() {
 
 // ---------- live signals: banner + signals grid -----------------------
 
-async function pollLive() {
-  const [fH, fI, fS, cH, cS, cSig, cM] = await Promise.all([
+// Fallbacks: same logic the page used before the builder API existed.
+async function legacyFaucet() {
+  const [fH, fI, fS] = await Promise.all([
     safe(ENDPOINTS.faucetHealth),
     safe(ENDPOINTS.faucetInfo),
     safe(ENDPOINTS.faucetStats),
-    safe(ENDPOINTS.calixHealth),
-    safe(ENDPOINTS.calixStatus),
-    safe(ENDPOINTS.calixSignals),
-    safe(ENDPOINTS.calixMiners),
   ]);
-
-  // Faucet ----------------------------------------------------------
-  let faucetState = 'bad', faucetText = 'Major Outage';
+  const out = { state: 'bad', text: 'Major Outage', filWei: null, usdfcWei: null, fil24: null, usdfc24: null };
   if (fH.ok && fH.value && fH.value.ok) {
-    faucetState = 'ok'; faucetText = 'Operational';
+    out.state = 'ok'; out.text = 'Operational';
     if (fI.ok) {
       const filWei  = BigInt(fI.value.filBalanceWei   ?? '0');
       const usdWei  = BigInt(fI.value.usdfcBalanceWei ?? '0');
@@ -242,79 +251,108 @@ async function pollLive() {
       const minFil  = BigInt(fI.value.minReserveFil   ?? '0') * dec;
       const minUsd  = BigInt(fI.value.minReserveUsdfc ?? '0') * dec;
       if (filWei < minFil || usdWei < minUsd) {
-        faucetState = 'watch';
-        faucetText  = 'Degraded — low reserve';
+        out.state = 'watch';
+        out.text  = 'Degraded: low reserve';
       }
     }
   }
-  setComponentState('faucet', faucetState, faucetText);
+  if (fI.ok) { out.filWei = fI.value.filBalanceWei; out.usdfcWei = fI.value.usdfcBalanceWei; }
+  if (fS.ok) { out.fil24 = fS.value.filDripsToday; out.usdfc24 = fS.value.usdfcDripsToday; }
+  return out;
+}
 
-  if (fI.ok) {
-    setText('signal-fil',   fmtBigUnit(fI.value.filBalanceWei, 18, 'tFIL'));
-    setText('signal-usdfc', fmtBigUnit(fI.value.usdfcBalanceWei, 18, 'USDFC'));
-  }
-  if (fS.ok) {
-    setText('signal-fil24',   fmtInt(fS.value.filDripsToday));
-    setText('signal-usdfc24', fmtInt(fS.value.usdfcDripsToday));
-  }
-
-  // Calix -----------------------------------------------------------
-  let calixState = 'bad', calixText = 'Major Outage';
+async function legacyCalix() {
+  const [cH, cS, cSig] = await Promise.all([
+    safe(ENDPOINTS.calixHealth),
+    safe(ENDPOINTS.calixStatus),
+    safe(ENDPOINTS.calixSignals),
+  ]);
+  const out = { state: 'bad', text: 'Major Outage', epoch: undefined, nv: undefined, headAge: undefined, bpe: null };
   if (cH.ok && cH.value && cH.value.ok) {
-    calixState = 'ok'; calixText = 'Operational';
+    out.state = 'ok'; out.text = 'Operational';
   }
   if (cS.ok) {
     const s = cS.value;
-    if (s.epoch !== undefined)          setText('signal-epoch', fmtInt(s.epoch));
-    if (s.networkVersion !== undefined) setText('signal-nv',    `nv${s.networkVersion}`);
-    if (s.headAgeSeconds !== undefined) {
-      setText('signal-head-age', fmtSeconds(s.headAgeSeconds));
-      if (s.headAgeSeconds > 300 && calixState === 'ok') {
-        calixState = 'watch';
-        calixText  = 'Degraded — head lagging';
-      }
+    out.epoch = s.epoch; out.nv = s.networkVersion; out.headAge = s.headAgeSeconds;
+    if (s.headAgeSeconds !== undefined && s.headAgeSeconds > 300 && out.state === 'ok') {
+      out.state = 'watch'; out.text = 'Degraded: head lagging';
     }
-    if (s.forked === true) {
-      calixState = 'bad';
-      calixText  = 'Forked from canonical';
-    }
+    if (s.forked === true) { out.state = 'bad'; out.text = 'Forked from canonical'; }
     const level = String(s.level || '').toLowerCase();
     if (level === 'degraded') {
-      calixState = 'bad';
-      calixText  = 'Degraded';
-    } else if (level === 'watch' && calixState === 'ok') {
-      calixState = 'watch';
-      calixText  = 'Watch';
+      out.state = 'bad'; out.text = 'Degraded';
+    } else if (level === 'watch' && out.state === 'ok') {
+      out.state = 'watch'; out.text = 'Watch';
     }
   }
-  if (cSig.ok && cSig.value.blocksPerEpoch) {
-    setText('signal-bpe', Number(cSig.value.blocksPerEpoch.value).toFixed(2));
-  }
-  setComponentState('calix', calixState, calixText);
+  if (cSig.ok && cSig.value.blocksPerEpoch) out.bpe = cSig.value.blocksPerEpoch.value;
+  return out;
+}
+
+async function legacySp() {
+  const cM = await safe(ENDPOINTS.calixMiners);
+  if (!cM.ok) return { state: 'bad', text: 'Major Outage' };
+  const list = Array.isArray(cM.value) ? cM.value : (cM.value.miners || []);
+  const target = list.find(m => (m.address || m.id) === SP_TARGET);
+  if (!target) return { state: 'bad', text: 'Major Outage' };
+  const status = String(target.status || '').toLowerCase();
+  if (status === 'active' || status === 'ok') return { state: 'ok', text: 'Operational' };
+  if (status === 'watch') return { state: 'watch', text: 'Degraded' };
+  return { state: 'bad', text: 'Offline' };
+}
+
+async function pollLive() {
+  const [vF, vN, vS] = await Promise.all([
+    safeV1(API_V1.faucetStatus),
+    safeV1(API_V1.network),
+    safeV1(API_V1.sp),
+  ]);
+
+  const used = [];
+  let faucet = vF.ok ? PlumblineApi.faucetFromV1(vF.value) : null;
+  let calix  = vN.ok ? PlumblineApi.calixFromV1(vN.value) : null;
+  let sp     = vS.ok ? PlumblineApi.spFromV1(vS.value, SP_TARGET) : null;
+  if (faucet && calix && sp) used.push('api-v1');
+  const fallbacks = await Promise.all([
+    faucet ? faucet : legacyFaucet(),
+    calix  ? calix  : legacyCalix(),
+    sp     ? sp     : legacySp(),
+  ]);
+  faucet = fallbacks[0]; calix = fallbacks[1]; sp = fallbacks[2];
+
+  // Faucet ----------------------------------------------------------
+  setComponentState('faucet', faucet.state, faucet.text);
+  if (faucet.filWei !== null)   setText('signal-fil',   fmtBigUnit(faucet.filWei, 18, 'tFIL'));
+  if (faucet.usdfcWei !== null) setText('signal-usdfc', fmtBigUnit(faucet.usdfcWei, 18, 'USDFC'));
+  if (faucet.fil24 !== null)    setText('signal-fil24',   fmtInt(faucet.fil24));
+  if (faucet.usdfc24 !== null)  setText('signal-usdfc24', fmtInt(faucet.usdfc24));
+
+  // Calix -----------------------------------------------------------
+  if (calix.epoch !== undefined && calix.epoch !== null) setText('signal-epoch', fmtInt(calix.epoch));
+  if (calix.nv !== undefined && calix.nv !== null)       setText('signal-nv',    'nv' + calix.nv);
+  if (calix.headAge !== undefined && calix.headAge !== null) setText('signal-head-age', fmtSeconds(calix.headAge));
+  if (calix.bpe !== null && calix.bpe !== undefined)     setText('signal-bpe', Number(calix.bpe).toFixed(2));
+  setComponentState('calix', calix.state, calix.text);
 
   // SP --------------------------------------------------------------
-  let spState = 'bad', spText = 'Major Outage';
-  if (cM.ok) {
-    const list = Array.isArray(cM.value) ? cM.value : (cM.value.miners || []);
-    const target = list.find(m => (m.address || m.id) === 't0143103');
-    if (target) {
-      const status = String(target.status || '').toLowerCase();
-      if (status === 'active' || status === 'ok') {
-        spState = 'ok'; spText = 'Operational';
-      } else if (status === 'watch') {
-        spState = 'watch'; spText = 'Degraded';
-      } else {
-        spState = 'bad'; spText = 'Offline';
-      }
-    }
-  }
+  let spState = sp.state, spText = sp.text;
   if (maintenanceActive() && MAINTENANCE.components.includes('sp')) {
     spState = 'watch';
     spText  = MAINTENANCE.componentText;
   }
   setComponentState('sp', spState, spText);
 
+  // Data source note ------------------------------------------------
+  const srcEl = document.getElementById('data-source');
+  if (srcEl) {
+    srcEl.textContent = used.includes('api-v1')
+      ? 'Plumbline builder API v1'
+      : 'builder API v1 with direct-endpoint fallback';
+    srcEl.dataset.source = used.includes('api-v1') ? 'api-v1' : 'fallback';
+  }
+
   // Group + banner --------------------------------------------------
+  const faucetState = faucet.state, calixState = calix.state;
   const worst = rank([faucetState, calixState, spState]);
   const rankMap = { ok: 'Operational', watch: 'Degraded Performance', bad: 'Major Outage' };
   setGroupState('surface', worst, rankMap[worst]);
@@ -372,8 +410,8 @@ async function tick() {
         const iso = isoDay(daysAgo);
         const dayMs = Date.parse(iso + 'T00:00:00Z');
         if (since !== null && dayMs < since) continue;
-        bars[i].dataset.state = 'watch';
-        bars[i].title = iso + ': scheduled maintenance';
+        bars[i].dataset.state = 'maint';
+        bars[i].title = iso + ': planned maintenance';
       }
     }
   }

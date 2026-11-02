@@ -143,6 +143,7 @@
       <span class="legend-item"><span class="chip chip-watch"></span>Degraded Performance</span>
       <span class="legend-item"><span class="chip chip-bad"></span>Major Outage</span>
       <span class="legend-item"><span class="chip chip-nodata"></span>No data</span>
+      <span class="legend-item"><span class="chip chip-maint"></span>Maintenance</span>
     </div>
   </section>
 
@@ -151,6 +152,15 @@
     <div class="incident-day" id="incident-today">
       <h3 id="incident-today-date">Today</h3>
       <p class="muted">No incidents reported.</p>
+    </div>
+    <div class="incident-day" data-date="2026-10-12">
+      <h3>Oct 12 – Oct 16, 2026</h3>
+      <div class="incident">
+        <p class="incident-title"><span class="incident-badge incident-resolved">Resolved</span>Planned storage-server maintenance on the hyperserver</p>
+        <p class="incident-update"><strong>Resolved</strong> · Fri 2026-10-16 · All sectors on the SP test target (t0143103) recovered after the storage server returned to service. Curio proving resumed and the component is back to Operational. Expecting the uptime bars to be fully green from tomorrow onward.</p>
+        <p class="incident-update"><strong>Window</strong> · Mon 2026-10-12 to Fri 2026-10-16 · Planned maintenance on the storage server backing t0143103. The work took longer than originally expected, which extended the window through the week.</p>
+        <p class="incident-update"><strong>Impact</strong> · SP Test Target offline for the duration of the window. Faucet and Calix were not affected.</p>
+      </div>
     </div>
     <div class="incident-day" data-date="2026-10-01">
       <h3>Oct 1, 2026</h3>
@@ -218,7 +228,10 @@
     <p class="signals-note">
       Machine-readable metrics for scraping:
       <a href="https://faucet.reiers.io/metrics"><code>faucet.reiers.io/metrics</code></a> ·
-      <a href="https://calix.reiers.io/metrics"><code>calix.reiers.io/metrics</code></a>
+      <a href="https://calix.reiers.io/metrics"><code>calix.reiers.io/metrics</code></a><br>
+      Live signals source: <span id="data-source" data-source="pending">loading</span>
+      (<a href="https://faucet.reiers.io/api/v1"><code>faucet.reiers.io/api/v1</code></a>,
+      <a href="https://faucet.reiers.io/api/v1/openapi.json">OpenAPI</a>)
     </p>
   </section>
 
@@ -239,6 +252,7 @@
   </div>
 </footer>
 
+<script src="./api-v1.js"></script>
 <script src="./app.js"></script>
 </body>
 </html>
