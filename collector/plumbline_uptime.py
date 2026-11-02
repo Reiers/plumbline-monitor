@@ -42,18 +42,22 @@ from typing import Any
 
 COMPONENTS = ("faucet", "calix", "sp")
 
-# Probe definitions. Each returns "ok" / "bad".
+# Probe definitions. Each returns "ok" / "bad". URLs can be overridden
+# via environment (for staging or a rebuilt host under other names).
 PROBES = {
     "faucet": {
-        "url": "https://faucet.reiers.io/healthz",
+        "url": os.environ.get("PLUMBLINE_FAUCET_URL", "https://faucet.reiers.io/healthz"),
         "timeout": 8,
     },
     "calix": {
-        "url": "https://calix.reiers.io/api/v1/health",
+        "url": os.environ.get("PLUMBLINE_CALIX_URL", "https://calix.reiers.io/api/v1/health"),
         "timeout": 8,
     },
     "sp": {
-        "url": "https://calix.reiers.io/api/v1/miners/status?addrs=t0143103",
+        "url": os.environ.get(
+            "PLUMBLINE_SP_URL",
+            "https://calix.reiers.io/api/v1/miners/status?addrs=t0143103",
+        ),
         "timeout": 8,
     },
 }
