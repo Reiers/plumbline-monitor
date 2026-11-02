@@ -5,7 +5,7 @@
  * the page renders. Loaded in the browser as window.PlumblineApi and in
  * Node (tests) via require().
  *
- * API reference: https://github.com/Reiers/plumbline-faucet/blob/main/docs/api.md
+ * API reference: https://github.com/Reiers/plumbline-faucet/blob/main/docs/api-v1.md
  */
 (function (root) {
   'use strict';

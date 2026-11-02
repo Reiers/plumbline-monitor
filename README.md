@@ -22,7 +22,7 @@ Two moving parts:
 
 1. **Static frontend** in [`web/`](./web/): vanilla HTML/CSS/JS, no
    build step. Rendered client-side. Live signals come from the
-   [Plumbline builder API v1](https://github.com/Reiers/plumbline-faucet/blob/main/docs/api.md)
+   [Plumbline builder API v1](https://github.com/Reiers/plumbline-faucet/blob/main/docs/api-v1.md)
    (`/api/v1/faucet/status`, `/api/v1/network`, `/api/v1/sp`), with a
    per-component fallback to the direct faucet and Calix endpoints.
 2. **Uptime collector** in [`collector/`](./collector/) — small
